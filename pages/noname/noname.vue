@@ -126,7 +126,8 @@ page {
 
 .chat-messages {
   flex: 1;
-  padding: 16px;
+  padding: 2vw;
+  width: 96vw;
   overflow-y: auto;
 }
 

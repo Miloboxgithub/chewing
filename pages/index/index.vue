@@ -7,11 +7,9 @@
       <view class="chat-window">
         <view class="imgs" v-for="item in items">
           <img :src="item.src" alt="" />
+          <view class="time-text">{{ item.created }}</view>
         </view>
-        <view style="width: 100%; height: 30px;">
-          
-        </view>
-          
+        <view style="width: 100%; height: 30px"> </view>
       </view>
     </view>
     <view class="datas">
@@ -34,17 +32,47 @@
 
 <script setup>
 import { ref } from "vue";
-import { onShow, onLoad, onReachBottom } from "@dcloudio/uni-app";
+import { onShow, onLoad, onHide } from "@dcloudio/uni-app";
 import Loading from "../../components/Loading.vue";
+let timer = null;
 
+onShow(() => {
+  getImages(); // 立即获取一次
+  timer = setInterval(getImages, 3000); // 每3秒获取一次
+});
+
+onHide(() => {
+  if (timer) {
+    clearInterval(timer);
+    timer = null;
+  }
+});
 const items = ref([
-  { id: 1, src: "https://picsum.photos/200" },
-  { id: 2, src: "https://picsum.photos/200" },
-  { id: 3, src: "https://picsum.photos/200" },
-  { id: 4, src: "https://picsum.photos/200" },
-  { id: 5, src: "https://picsum.photos/200" },
-  { id: 6, src: "https://picsum.photos/200" },
+  { src: "https://picsum.photos/200" },
+  { src: "https://picsum.photos/200" },
+  { src: "https://picsum.photos/200" },
+  { src: "https://picsum.photos/200" },
+  { src: "https://picsum.photos/200" },
+  { src: "https://picsum.photos/200" },
 ]);
+const getImages = () => {
+  uni.request({
+    url: "http://112.74.32.111:8000/images",
+    success: (res) => {
+      if (res.statusCode === 200) {
+        items.value = res.data.images.map((item) => ({
+          src: "http://112.74.32.111:8000" + item.url,
+          created: item.created
+        }));
+      } else {
+        console.error("获取图片失败", res);
+      }
+    },
+    fail: (err) => {
+      console.error("请求失败", err);
+    },
+  });
+};
 </script>
 
 <style lang="scss" scoped>
@@ -61,7 +89,7 @@ const items = ref([
   width: 100%;
   height: 64px;
   padding: 16px 8px;
-  background: linear-gradient(135deg, #4F78FF 0%, #3a5bd9 100%);
+  background: linear-gradient(135deg, #4f78ff 0%, #3a5bd9 100%);
   color: white;
   font-size: 20px;
   font-weight: bold;
@@ -71,7 +99,7 @@ const items = ref([
   position: relative;
   letter-spacing: 1px;
 }
-.www{
+.www {
   position: absolute;
   left: 50px;
   top: 51.5px;
@@ -88,19 +116,6 @@ const items = ref([
   background-repeat: no-repeat;
 }
 
-// .app-title::after {
-//   content: "";
-//   position: absolute;
-//   right: 20px;
-//   top: 50%;
-//   transform: translateY(-50%);
-//   width: 24px;
-//   height: 24px;
-//   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm-1.06 13.54L7.4 12l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41-5.64 5.66z"/></svg>');
-//   background-size: contain;
-//   background-repeat: no-repeat;
-// }
-
 .card {
   margin-top: 5px;
   width: 90vw;
@@ -111,7 +126,7 @@ const items = ref([
 }
 
 .chat-header {
-  background-color: #4F78FF;
+  background-color: #4f78ff;
   color: #fff;
   padding: 12px 16px;
   font-size: 16px;
@@ -140,6 +155,13 @@ const items = ref([
   display: block;
 }
 
+.time-text {
+  color: #999;
+  font-size: 12px;
+  padding:0px 8px 4px 8px;
+  
+}
+
 .datas {
   width: 90vw;
   display: flex;
@@ -164,7 +186,7 @@ const items = ref([
 .data-value {
   font-size: 18px;
   font-weight: bold;
-  color: #4F78FF;
+  color: #4f78ff;
 }
 
 .btns {
@@ -179,7 +201,7 @@ const items = ref([
   width: 30%;
   height: 42px;
   border-radius: 8px;
-  background-color: #4F78FF;
+  background-color: #4f78ff;
   font-size: 14px;
   font-weight: 500;
   color: #fff;
