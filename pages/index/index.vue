@@ -62,7 +62,7 @@ const getImages = () => {
       if (res.statusCode === 200) {
         items.value = res.data.images.map((item) => ({
           src: "http://112.74.32.111:8000" + item.url,
-          created: item.created
+          created: item.created,
         }));
       } else {
         console.error("获取图片失败", res);
@@ -158,8 +158,7 @@ const getImages = () => {
 .time-text {
   color: #999;
   font-size: 12px;
-  padding:0px 8px 4px 8px;
-  
+  padding: 0px 8px 4px 8px;
 }
 
 .datas {
