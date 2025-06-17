@@ -6,14 +6,14 @@
     </view>
 
     <!-- 消息列表 -->
-    <scroll-view 
-      scroll-y="true" 
+    <scroll-view
+      scroll-y="true"
       class="chat-messages"
       :scroll-with-animation="true"
       :scroll-into-view="'msg-' + (messages.length - 1)"
     >
-      <view 
-        v-for="(msg, index) in messages" 
+      <view
+        v-for="(msg, index) in messages"
         :key="index"
         :id="'msg-' + index"
         class="message-wrapper"
@@ -26,9 +26,15 @@
 
       <view v-if="loading" class="message-wrapper ai-message">
         <view class="loading-bubble">
-          <view class="loading-dot" style="background-color: #4F78FF"></view>
-          <view class="loading-dot delay-1" style="background-color: #4F78FF"></view>
-          <view class="loading-dot delay-2" style="background-color: #4F78FF"></view>
+          <view class="loading-dot" style="background-color: #4f78ff"></view>
+          <view
+            class="loading-dot delay-1"
+            style="background-color: #4f78ff"
+          ></view>
+          <view
+            class="loading-dot delay-2"
+            style="background-color: #4f78ff"
+          ></view>
         </view>
       </view>
     </scroll-view>
@@ -36,14 +42,14 @@
     <!-- 输入区域 -->
     <view class="chat-input-area">
       <view class="input-wrapper">
-        <input 
+        <input
           v-model="inputText"
-          type="text" 
-          placeholder="输入消息..." 
+          type="text"
+          placeholder="输入消息..."
           class="message-input"
           @confirm="sendMessage"
         />
-        <button 
+        <button
           @click="sendMessage"
           class="send-button"
           :disabled="!inputText.trim()"
@@ -56,47 +62,50 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref } from "vue";
 
 const messages = ref([
-  { role: 'assistant', content: '你好！我是口香糖检测小助手，有什么可以帮您的吗？' }
-])
-const inputText = ref('')
-const loading = ref(false)
+  {
+    role: "assistant",
+    content: "你好！我是口香糖检测小助手，有什么可以帮您的吗？",
+  },
+]);
+const inputText = ref("");
+const loading = ref(false);
 
 const sendMessage = () => {
-  if (!inputText.value.trim()) return
-  
-  const userMsg = inputText.value
-  messages.value.push({ role: 'user', content: userMsg })
-  inputText.value = ''
-  loading.value = true
-  
+  if (!inputText.value.trim()) return;
+
+  const userMsg = inputText.value;
+  messages.value.push({ role: "user", content: userMsg });
+  inputText.value = "";
+  loading.value = true;
+
   // 模拟AI回复
   setTimeout(() => {
-    messages.value.push({ 
-      role: 'assistant', 
-      content: getAIResponse(userMsg) 
-    })
-    loading.value = false
-  }, 1000)
-}
+    messages.value.push({
+      role: "assistant",
+      content: getAIResponse(userMsg),
+    });
+    loading.value = false;
+  }, 1000);
+};
 
 const getAIResponse = (userMsg) => {
   const responses = [
-    '这是一个有趣的提问！',
-    '我理解您的问题是关于：' + userMsg,
-    '让我思考一下如何回答这个问题...',
-    '感谢您的提问，我的回答是：这取决于具体情况。',
-    '您能提供更多细节吗？这样我可以更好地帮助您。'
-  ]
-  return responses[Math.floor(Math.random() * responses.length)]
-}
+    "这是一个有趣的提问！",
+    "我理解您的问题是关于：" + userMsg,
+    "让我思考一下如何回答这个问题...",
+    "感谢您的提问，我的回答是：这取决于具体情况。",
+    "您能提供更多细节吗？这样我可以更好地帮助您。",
+  ];
+  return responses[Math.floor(Math.random() * responses.length)];
+};
 </script>
 
 <style>
 page {
-  height: 100%;
+  height: 100vh;
 }
 
 .chat-container {
@@ -107,19 +116,20 @@ page {
 }
 
 .chat-header {
-  height: 64px;
+  height: 30px;
   padding: 16px 8px;
-  background-color: #4F78FF;
+  background-color: #4f78ff;
   box-shadow: 0 2px 10px rgba(79, 120, 255, 0.2);
 }
 
 .chat-title {
   position: absolute;
-  top: 54px;
+  top: 20px;
+  left: 20px;
   font-size: 20px;
   font-weight: bold;
   text-align: center;
-  
+
   color: white;
   letter-spacing: 1px;
 }
@@ -151,7 +161,7 @@ page {
 }
 
 .user-message .message-bubble {
-  background-color: #4F78FF;
+  background-color: #4f78ff;
   color: white;
   box-shadow: 0 2px 8px rgba(79, 120, 255, 0.3);
 }
@@ -189,7 +199,8 @@ page {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(0.8);
     opacity: 0.5;
   }
@@ -200,7 +211,10 @@ page {
 }
 
 .chat-input-area {
-  padding: 12px;
+  position: fixed;
+  bottom: 50px;
+  width: calc(100% - 32px);
+  padding: 16px;
   background-color: white;
   border-top: 1px solid #e6ebff;
 }
@@ -221,7 +235,7 @@ page {
 }
 
 .message-input:focus {
-  border-color: #4F78FF;
+  border-color: #4f78ff;
   box-shadow: 0 0 0 2px rgba(79, 120, 255, 0.2);
 }
 
@@ -231,7 +245,7 @@ page {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #4F78FF;
+  background-color: #4f78ff;
   color: white;
   border: none;
   border-radius: 50%;
