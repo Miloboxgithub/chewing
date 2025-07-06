@@ -1,7 +1,7 @@
 <template>
   <loading :show="isLoading"></loading>
   <view class="page-container">
-    <view class="app-title"><text class="www">口香糖缺陷检测系统</text></view>
+    <view class="app-title"><text class="www">口香糖缺陷工业检测系统</text></view>
     <view class="card">
       <view class="chat-header">实时图像展示</view>
       <view class="chat-window">
@@ -272,9 +272,9 @@ function onLongPress(imageUrl) {
   position: absolute;
   left: 20px;
   top: 24px;
-  width: 24px;
-  height: 24px;
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm-1.06 13.54L7.4 12l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41-5.64 5.66z"/></svg>');
+  width: 28px;
+  height: 28px;
+  background-image: url('../../static/111.png');
   background-size: contain;
   background-repeat: no-repeat;
 }
