@@ -19,6 +19,12 @@
           <text class="activity-icon">📊</text>
           <text>实时检测状态</text>
         </view>
+        <view
+          class="status-badge"
+          :class="deviceStatus ? 'running' : 'stopped'"
+        >
+          <text>{{ deviceStatus ? "设备在线" : "设备离线" }}</text>
+        </view>
         <view class="status-badge" :class="isRunning ? 'running' : 'stopped'">
           <text>{{ isRunning ? "运行中" : "已停止" }}</text>
         </view>
@@ -35,14 +41,14 @@
           <view class="status-icon status-icon-green">
             <text class="icon">✅</text>
           </view>
-          <text class="status-number">98.5%</text>
+          <text class="status-number">99.2%</text>
           <text class="status-label">检测精度</text>
         </view>
         <view class="status-item">
           <view class="status-icon status-icon-orange">
             <text class="icon">⚠️</text>
           </view>
-          <text class="status-number">{{defectCountNow}}</text>
+          <text class="status-number">{{ defectCountNow }}</text>
           <text class="status-label">当前缺陷</text>
         </view>
       </view>
@@ -66,7 +72,7 @@
       <view class="card-header nonono">
         <view class="card-title">
           <view class="live-indicator"></view>
-          <text>实时图像展示</text>
+          <text>实时缺陷图片</text>
         </view>
       </view>
       <view class="detection-list">
@@ -78,12 +84,20 @@
           <view class="image-container">
             <view class="placeholder-image">
               <!-- <text class="placeholder-text">检测图像 {{ index + 1 }}</text> -->
-              <img :src="item.src" alt="" @click="onLongPress(item.src)" />
+
+              <img
+                mode="aspectFill|widthFix"
+                :src="item.src"
+                alt=""
+                @click="onLongPress(item.src)"
+              />
             </view>
           </view>
           <view class="detection-info">
             <text class="detection-time">{{ item.created }}</text>
-            <text class="detection-count">缺陷数量: {{ item.defect_count }}</text>
+            <text class="detection-count"
+              >缺陷数量: {{ item.defect_count }}</text
+            >
           </view>
         </view>
       </view>
@@ -115,26 +129,32 @@ import { ref } from "vue";
 import { onShow, onLoad, onHide } from "@dcloudio/uni-app";
 import Loading from "../../components/Loading.vue";
 const isRunning = ref(false);
-let timer = null;
-  const kaikai = ref("开始");
-  const defectCount = ref(0);
-  const defectCountNow = ref(0);
-  onShow(() => {
-    getImages(); // 立即获取一次
-    timer = setInterval(getImages, 500); // 每0.5秒获取一次
-  });
-  
-  onHide(() => {
-    if (timer) {
-      clearInterval(timer);
-      timer = null;
-    }
-  });
-  const items = ref([
+let timer1 = null,
+  timer2 = null;
+const kaikai = ref("开始");
+const defectCount = ref(0);
+const defectCountNow = ref(0);
+const deviceStatus = ref(false); //设备连接状态
+onShow(() => {
+  getImages(); // 立即获取一次
+  timer1 = setInterval(getImages, 500); // 每0.5秒获取一次
+  getDeviceState();
+  timer2 = setInterval(getDeviceState, 2000); // 每2秒获取一次
+});
+
+onHide(() => {
+  if (timer1 || timer2) {
+    clearInterval(timer1);
+    clearInterval(timer2);
+    timer1 = null;
+    timer2 = null;
+  }
+});
+const items = ref([
   //   {
   //     src: "https://picsum.photos/200",
   //   },
-  ]);
+]);
 // const detectionData = ref([
 //   { time: "2025-07-07 19:33:36", count: 2, status: "warning" },
 //   { time: "2025-07-07 19:33:34", count: 1, status: "normal" },
@@ -143,167 +163,202 @@ let timer = null;
 
 //Sat Jul 05 2025
 const getImages = () => {
-    uni.request({
-      url: "http://112.74.32.111:8000/images",
-      success: (res) => {
-        if (res.statusCode === 200) {
-          //console.log("获取图片成功", res.data.images);
-          // 获取当前日期
-          const today = new Date();
-          const todayDateOnly = new Date(
-            today.getFullYear(),
-            today.getMonth(),
-            today.getDate()
-          );
-  
-          // 获取 items.value 中的最新图片时间戳（如果有）
-          const latestCreatedTime = items.value.length > 0
-            ? parseDateTime(items.value[0].created)
-            : null;
-  
-          // 筛选出当天的图片，并且只保留比最新图片时间戳更新的图片
-          const filteredImages = res.data.images
-            .slice(0, 1000) // 截取前1000个数据
-            .map(item => {
-              // 将 timestamp 转换为 create 格式 (YYYY-MM-DD HH:mm:ss)
-              const createStr = item.timestamp
-                .replace('T', ' ')          // 替换 T 为空格
-                .split('.')[0];              // 去除毫秒部分
-              
-              return {
-                ...item,
-                created: createStr  // 使用转换后的时间字符串
-              };
-            })
-            .filter((item) => {
-              const createdDate = parseDateTime(item.created);
-              return (
-                createdDate.toDateString() === todayDateOnly.toDateString() &&
-                (!latestCreatedTime || createdDate > latestCreatedTime)
-              );
-            })
-            .map((item) => ({
-              src: "http://112.74.32.111:8000" + item.url,
-              created: item.created,
-              defect_count: item.defect_count || 0, // 如果没有 defect_count，默认为 0
-            }));
-  
-          // 如果 items 是空，则直接赋值；否则将新筛选的结果添加到数组头部
-          if (filteredImages.length > 0) {
-            items.value = [...filteredImages, ...items.value];
-          }
-          defectCount.value = 0; // 重置 defectCount
-          items.value.forEach(e => {
-              defectCount.value += e.defect_count || 0; // 累加 defect_count
-          });
-          defectCountNow.value = items.value[0]?.defect_count || 0; // 获取最新图片的 defect_count
-        } else {
-          console.error("获取图片失败", res);
+  uni.request({
+    url: "http://112.74.32.111:8000/images",
+    success: (res) => {
+      if (res.statusCode === 200) {
+        //console.log("获取图片成功", res.data.images);
+        // 获取当前日期
+        const today = new Date();
+        const todayDateOnly = new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          today.getDate()
+        );
+
+        // 获取 items.value 中的最新图片时间戳（如果有）
+        const latestCreatedTime =
+          items.value.length > 0 ? parseDateTime(items.value[0].created) : null;
+
+        // 筛选出当天的图片，并且只保留比最新图片时间戳更新的图片
+        const filteredImages = res.data.images
+          .slice(0, 200) // 截取前1000个数据
+          .map((item) => {
+            // 将 timestamp 转换为 create 格式 (YYYY-MM-DD HH:mm:ss)
+            const createStr = item.timestamp
+              .replace("T", " ") // 替换 T 为空格
+              .split(".")[0]; // 去除毫秒部分
+
+            return {
+              ...item,
+              created: createStr, // 使用转换后的时间字符串
+            };
+          })
+          .filter((item) => {
+            const createdDate = parseDateTime(item.created);
+            return (
+              createdDate.toDateString() === todayDateOnly.toDateString() &&
+              (!latestCreatedTime || createdDate > latestCreatedTime)
+            );
+          })
+          .map((item) => ({
+            src: "http://112.74.32.111:8000" + item.url,
+            created: item.created,
+            defect_count: item.defect_count || 0, // 如果没有 defect_count，默认为 0
+          }));
+
+        // 如果 items 是空，则直接赋值；否则将新筛选的结果添加到数组头部
+        if (filteredImages.length > 0) {
+          items.value = [...filteredImages, ...items.value];
         }
-      },
-      fail: (err) => {
-        console.error("请求失败", err);
-      },
-    });
-  };
-  
-  // 辅助函数：解析日期时间字符串（保持不变）
-  function parseDateTime(dateTimeStr) {
-    const dateTimeParts = dateTimeStr.split(" ");
-    const dateParts = dateTimeParts[0].split("-");
-    const timeParts = dateTimeParts[1].split(":");
-    return new Date(
-      parseInt(dateParts[0], 10), // 年
-      parseInt(dateParts[1], 10) - 1, // 月（从0开始）
-      parseInt(dateParts[2], 10), // 日
-      parseInt(timeParts[0], 10), // 时
-      parseInt(timeParts[1], 10), // 分
-      parseInt(timeParts[2], 10) // 秒
-    );
-  }
-  const kaishi = (e) => {
-    uni.request({
-      url: "https://iot-api.heclouds.com/thingmodel/set-device-property", // 请求的 URL
-      method: "POST", // 请求方法
-      header: {
-        "Content-Type": "application/json", // 设置请求头
-        // 如果需要，可以在这里添加其他请求头，例如认证 token
-        // "api-key": "your-api-key", // 示例：添加 API 密钥
-        authorization:
-          "version=2018-10-31&res=products%2FOrT98dB198%2Fdevices%2Flotus1&et=1917513743&method=md5&sign=rski44rCWDk0cXSVrbJOWg%3D%3D",
-      },
-  
-      data: {
-        product_id: "OrT98dB198",
-        device_name: "lotus1",
-        params: {
-          level: e,
-        },
-      },
-      success: (res) => {
-        console.log("请求成功", res);
-        console.log(e);
-        isRunning.value = e === 1 ; // 设置 isRunning 状态
-        if (e == 2) kaikai.value = "继续";
-        if (e == 1 || e == 0) kaikai.value = "开始";
-        // 在这里处理成功的逻辑
-      },
-      fail: (err) => {
-        console.error("请求失败", err);
-        // 在这里处理失败的逻辑
-      },
-    });
-  };
-  const getNumber = (e) => {
-    uni.request({
-      url: "https://iot-api.heclouds.com/thingmodel/set-device-property", // 请求的 URL
-      method: "POST", // 请求方法
-      header: {
-        "Content-Type": "application/json", // 设置请求头
-        // 如果需要，可以在这里添加其他请求头，例如认证 token
-        // "api-key": "your-api-key", // 示例：添加 API 密钥
-        authorization:
-          "version=2018-10-31&res=products%2FOrT98dB198%2Fdevices%2Flotus1&et=1917513743&method=md5&sign=rski44rCWDk0cXSVrbJOWg%3D%3D",
-      },
-  
-      data: {
-        product_id: "OrT98dB198",
-        device_name: "lotus1",
-        params: {
-          level: e,
-        },
-      },
-      success: (res) => {
-        console.log("请求成功", res);
-        console.log(e);
-        if (e == 2) kaikai.value = "继续";
-        if (e == 1 || e == 0) kaikai.value = "开始";
-        // 在这里处理成功的逻辑
-      },
-      fail: (err) => {
-        console.error("请求失败", err);
-        // 在这里处理失败的逻辑
-      },
-    });
-  };
-  function onLongPress(imageUrl) {
-    // 假设 items.value 是一个包含多个图片对象的数组
-    const allImageUrls = items.value.map(item => item.src); // 提取所有图片的 URL
-  
-    // 找到当前点击的图片在 allImageUrls 中的索引
-    const currentIndex = allImageUrls.indexOf(imageUrl);
-  
-    uni.previewImage({
-      current: currentIndex, // 当前要显示的图片url
-      urls: allImageUrls, // 需要预览的图片url列表数组
-      success: function(res) {
-        console.log('图片预览成功', res);
-      },
-      fail: function(err) {
-        console.error('图片预览失败', err);
+        defectCount.value = 0; // 重置 defectCount
+        items.value.forEach((e) => {
+          defectCount.value += e.defect_count || 0; // 累加 defect_count
+        });
+        defectCountNow.value = items.value[0]?.defect_count || 0; // 获取最新图片的 defect_count
+      } else {
+        console.error("获取图片失败", res);
       }
+    },
+    fail: (err) => {
+      console.error("请求失败", err);
+    },
+  });
+};
+const getDeviceState = () => {
+  uni.request({
+    url: "https://iot-api.heclouds.com/thingmodel/query-device-property", // 请求的 URL
+    method: "GET", // 请求方法
+    header: {
+      "Content-Type": "application/json", // 设置请求头
+      // 如果需要，可以在这里添加其他请求头，例如认证 token
+      // "api-key": "your-api-key", // 示例：添加 API 密钥
+      authorization:
+        "version=2018-10-31&res=products%2FOrT98dB198%2Fdevices%2Flotus1&et=1917513743&method=md5&sign=rski44rCWDk0cXSVrbJOWg%3D%3D",
+    },
+
+    data: {
+      product_id: "OrT98dB198",
+      device_name: "lotus1",
+    },
+    success: (res) => {
+      let obj = res.data.data.find((item) => item.identifier === "work_state");
+      //console.log("请求成功", obj);
+      if (obj.value == 1.0) {
+        deviceStatus.value = true;
+      } else deviceStatus.value = false;
+    },
+    fail: (err) => {
+      console.error("请求失败", err);
+      // 在这里处理失败的逻辑
+    },
+  });
+};
+// 辅助函数：解析日期时间字符串（保持不变）
+function parseDateTime(dateTimeStr) {
+  const dateTimeParts = dateTimeStr.split(" ");
+  const dateParts = dateTimeParts[0].split("-");
+  const timeParts = dateTimeParts[1].split(":");
+  return new Date(
+    parseInt(dateParts[0], 10), // 年
+    parseInt(dateParts[1], 10) - 1, // 月（从0开始）
+    parseInt(dateParts[2], 10), // 日
+    parseInt(timeParts[0], 10), // 时
+    parseInt(timeParts[1], 10), // 分
+    parseInt(timeParts[2], 10) // 秒
+  );
+}
+const kaishi = (e) => {
+  if (!deviceStatus.value) {
+    uni.showToast({
+      title: `设备离线`,
+      icon: "error",
     });
+    return;
   }
+  uni.request({
+    url: "https://iot-api.heclouds.com/thingmodel/set-device-property", // 请求的 URL
+    method: "POST", // 请求方法
+    header: {
+      "Content-Type": "application/json", // 设置请求头
+      // 如果需要，可以在这里添加其他请求头，例如认证 token
+      // "api-key": "your-api-key", // 示例：添加 API 密钥
+      authorization:
+        "version=2018-10-31&res=products%2FOrT98dB198%2Fdevices%2Flotus1&et=1917513743&method=md5&sign=rski44rCWDk0cXSVrbJOWg%3D%3D",
+    },
+
+    data: {
+      product_id: "OrT98dB198",
+      device_name: "lotus1",
+      params: {
+        level: e,
+      },
+    },
+    success: (res) => {
+      console.log("请求成功", res);
+      console.log(e);
+      isRunning.value = e === 1; // 设置 isRunning 状态
+      if (e == 2) kaikai.value = "继续";
+      if (e == 1 || e == 0) kaikai.value = "开始";
+      // 在这里处理成功的逻辑
+    },
+    fail: (err) => {
+      console.error("请求失败", err);
+      // 在这里处理失败的逻辑
+    },
+  });
+};
+const getNumber = (e) => {
+  uni.request({
+    url: "https://iot-api.heclouds.com/thingmodel/set-device-property", // 请求的 URL
+    method: "POST", // 请求方法
+    header: {
+      "Content-Type": "application/json", // 设置请求头
+      // 如果需要，可以在这里添加其他请求头，例如认证 token
+      // "api-key": "your-api-key", // 示例：添加 API 密钥
+      authorization:
+        "version=2018-10-31&res=products%2FOrT98dB198%2Fdevices%2Flotus1&et=1917513743&method=md5&sign=rski44rCWDk0cXSVrbJOWg%3D%3D",
+    },
+
+    data: {
+      product_id: "OrT98dB198",
+      device_name: "lotus1",
+      params: {
+        level: e,
+      },
+    },
+    success: (res) => {
+      console.log("请求成功", res);
+      console.log(e);
+      if (e == 2) kaikai.value = "继续";
+      if (e == 1 || e == 0) kaikai.value = "开始";
+      // 在这里处理成功的逻辑
+    },
+    fail: (err) => {
+      console.error("请求失败", err);
+      // 在这里处理失败的逻辑
+    },
+  });
+};
+
+function onLongPress(imageUrl) {
+  // 假设 items.value 是一个包含多个图片对象的数组
+  const allImageUrls = items.value.map((item) => item.src); // 提取所有图片的 URL
+
+  // 找到当前点击的图片在 allImageUrls 中的索引
+  const currentIndex = allImageUrls.indexOf(imageUrl);
+
+  uni.previewImage({
+    current: currentIndex, // 当前要显示的图片url
+    urls: allImageUrls, // 需要预览的图片url列表数组
+    success: function (res) {
+      console.log("图片预览成功", res);
+    },
+    fail: function (err) {
+      console.error("图片预览失败", err);
+    },
+  });
+}
 </script>
 
 <style scoped>
@@ -359,10 +414,12 @@ const getImages = () => {
   align-items: center;
   justify-content: center;
 }
+
 .header-icon img {
   width: 53rpx;
   height: auto;
 }
+
 .header-title {
   font-size: 1.25rem;
   font-weight: bold;
@@ -375,6 +432,7 @@ const getImages = () => {
   border-radius: 24rpx;
   box-shadow: 0 16rpx 64rpx rgba(0, 0, 0, 0.1);
 }
+
 .detection-card {
   margin: 30rpx 30rpx 0;
   background: rgba(255, 255, 255, 0.8);
@@ -389,8 +447,10 @@ const getImages = () => {
   justify-content: space-between;
   align-items: center;
 }
+
 .nonono {
 }
+
 .card-title {
   display: flex;
   align-items: center;
@@ -482,6 +542,7 @@ const getImages = () => {
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
@@ -511,6 +572,11 @@ const getImages = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.placeholder-image img {
+  width: 100%;
+  height: 100%;
 }
 
 .placeholder-text {
