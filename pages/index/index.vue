@@ -167,7 +167,7 @@ const getImages = () => {
     url: "http://112.74.32.111:8000/images",
     success: (res) => {
       if (res.statusCode === 200) {
-        //console.log("获取图片成功", res.data.images);
+        console.log("获取图片成功", res.data.images);
         // 获取当前日期
         const today = new Date();
         const todayDateOnly = new Date(
