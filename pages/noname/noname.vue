@@ -190,7 +190,7 @@ const sendMessage = async () => {
 };
 const DEEPSEEK_API_KEY = "sk-95574542933b443e881bbf19a4ec2730";
 // 调用DeepSeek API
-const callDeepSeekAPI = async (message) => {
+const callDeepSeekAPI = async (message, onStream) => {
   const res = await uni.request({
     url: "https://api.deepseek.com/v1/chat/completions",
     method: "POST",
