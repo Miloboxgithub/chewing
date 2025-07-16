@@ -287,9 +287,18 @@ const handleService = (service) => {
     return;
   }
   
-  uni.showToast({
-    title: `点击了${service}`,
-    icon: "none",
+  // uni.showToast({
+  //   title: `点击了${service}`,
+  //   icon: "none",
+  // });
+  if(service!='history' ){
+    uni.showToast({
+      title: '该功能正在开发中~',
+      icon: "none",
+    });
+  }
+  uni.navigateTo({
+    url: `/pages/${service}/${service}`
   });
 };
 
