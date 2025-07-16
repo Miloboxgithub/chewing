@@ -19,12 +19,9 @@
 					<text class="activity-icon">📊</text>
 					<text>实时检测状态</text>
 				</view>
-				<!-- <view
-          class="status-badge"
-          :class="deviceStatus ? 'running' : 'stopped'"
-        >
-          <text>{{ deviceStatus ? "设备在线" : "设备离线" }}</text>
-        </view> -->
+				<view class="status-badge" :class="deviceStatus ? 'running' : 'stopped'">
+					<text>{{ deviceStatus ? "设备在线" : "设备离线" }}</text>
+				</view>
 				<view class="status-badge" :class="isRunning ? 'running' : 'stopped'">
 					<text>{{ isRunning ? "运行中" : "已停止" }}</text>
 				</view>
@@ -129,12 +126,12 @@
 	const kaikai = ref("开始");
 	const defectCount = ref(0);
 	const defectCountNow = ref(0);
-	const deviceStatus = ref(true); //设备连接状态
+	const deviceStatus = ref(false); //设备连接状态
 	onShow(() => {
 		getImages(); // 立即获取一次
 		timer1 = setInterval(getImages, 500); // 每0.5秒获取一次
-		// getDeviceState();
-		// timer2 = setInterval(getDeviceState, 2000); // 每2秒获取一次
+		getDeviceState();
+		timer2 = setInterval(getDeviceState, 2000); // 每2秒获取一次
 	});
 
 	onHide(() => {
@@ -240,7 +237,11 @@
 				//console.log("请求成功", obj);
 				if (obj.value == 1.0) {
 					deviceStatus.value = true;
-				} else deviceStatus.value = false;
+				} else {
+					deviceStatus.value = false;
+					isRunning.value = false;
+					kaikai.value = '开始';
+				}
 			},
 			fail: (err) => {
 				console.error("请求失败", err);
@@ -290,7 +291,7 @@
 			success: (res) => {
 				console.log("请求成功", res);
 				console.log(e);
-				isRunning.value = e === 1; // 设置 isRunning 状态
+				isRunning.value = e === 1 || e === 2; // 设置 isRunning 状态
 				if (e == 2) kaikai.value = "继续";
 				if (e == 1 || e == 0) kaikai.value = "开始";
 				// 在这里处理成功的逻辑
